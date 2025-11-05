@@ -1,0 +1,83 @@
+# =========================
+# Maven / Gradle 输出
+# =========================
+target/
+build/
+
+# =========================
+# IDE 文件
+# =========================
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+out/
+
+# Eclipse
+.project
+.classpath
+.settings/
+bin/
+
+# VS Code
+.vscode/
+
+# =========================
+# 操作系统文件
+# =========================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# =========================
+# 日志文件
+# =========================
+*.log
+
+# =========================
+# 临时文件 / 缓存
+# =========================
+*.tmp
+*.swp
+*.swo
+*.bak
+*.orig
+
+# =========================
+# Spring Boot 特定
+# =========================
+/spring.log
+/spring.pid
+
+# =========================
+# 证书 / 密钥文件
+# =========================
+*.jks
+*.keystore
+*.p12
+*.crt
+*.pem
+
+# =========================
+# Maven Wrapper
+# =========================
+.mvn/wrapper/maven-wrapper.jar
+
+# =========================
+# 其他
+# =========================
+# 本地配置
+application-local.properties
+application-local.yml
+
+# ========================
+# api test
+# ========================
+api-test/
