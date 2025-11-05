@@ -36,3 +36,9 @@ logging:
   level:
     com.ai.travel: DEBUG
     org.springframework.security: DEBUG
+
+# 豆包API配置
+doubao:
+  api-key: "83c6548c-59d1-4d33-8943-0fa2f9e012a4"
+  base-url: "https://ark.cn-beijing.volces.com/api/v3"
+  model: "doubao-seed-1-6-251015"
