@@ -81,3 +81,5 @@ application-local.yml
 # api test
 # ========================
 api-test/
+
+*.sql
