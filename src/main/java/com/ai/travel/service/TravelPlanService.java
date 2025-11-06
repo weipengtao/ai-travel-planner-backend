@@ -4,24 +4,29 @@ import com.ai.travel.entity.TravelPlan;
 import com.ai.travel.entity.User;
 import com.ai.travel.repository.TravelPlanRepository;
 import com.ai.travel.repository.UserRepository;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
 @Service
 public class TravelPlanService {
-    
+
     @Autowired
     private TravelPlanRepository travelPlanRepository;
-    
+
     @Autowired
     private UserRepository userRepository;
-    
+
     @Autowired
     private AIService aiService;
-    
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
     /**
      * 创建新的旅行计划
      */
@@ -29,43 +34,53 @@ public class TravelPlanService {
         // 调用AI服务生成旅行计划
         String aiResponse = aiService.generateTravelPlan(travelRequest);
         String planData = aiService.parseAIPlan(aiResponse, travelRequest);
-        
-        // 解析计划数据获取目的地和天数
-        String destination = extractDestinationFromPlanData(planData);
-        Integer duration = extractDurationFromPlanData(planData);
-        
+
+        // 解析计划数据
+        JsonNode planJson = parseJson(planData);
+
+        // 提取字段
+        String destination = extractDestination(planJson);
+        Integer duration = extractDuration(planJson);
+        BigDecimal totalBudget = extractTotalBudget(planJson);
+
         // 创建旅行计划实体
-        TravelPlan travelPlan = new TravelPlan(user, destination, duration, null, travelRequest, planData);
-        
+        TravelPlan travelPlan = new TravelPlan(
+                user,
+                destination,
+                duration,
+                totalBudget,
+                travelRequest,
+                planData
+        );
+
         return travelPlanRepository.save(travelPlan);
     }
-    
+
     /**
      * 根据用户ID获取所有旅行计划
      */
     public List<TravelPlan> getUserTravelPlans(User user) {
         return travelPlanRepository.findByUserOrderByCreatedAtDesc(user);
     }
-    
+
     /**
      * 根据ID获取旅行计划（确保属于当前用户）
      */
     public Optional<TravelPlan> getTravelPlanById(Long id, User user) {
         return travelPlanRepository.findByIdAndUser(id, user);
     }
-    
+
     /**
      * 获取用户最近创建的旅行计划
      */
     public Optional<TravelPlan> getLatestTravelPlan(User user) {
         return travelPlanRepository.findFirstByUserOrderByCreatedAtDesc(user);
     }
-    
+
     /**
      * 检查是否存在相似的旅行计划（避免重复生成）
      */
     public boolean hasSimilarPlan(User user, String travelRequest) {
-        // 提取关键词进行相似性检查
         String[] keywords = extractKeywords(travelRequest);
         for (String keyword : keywords) {
             List<TravelPlan> similarPlans = travelPlanRepository.findSimilarPlansByUserAndKeyword(user, keyword);
@@ -75,59 +90,90 @@ public class TravelPlanService {
         }
         return false;
     }
-    
+
     /**
      * 删除旅行计划
      */
     public void deleteTravelPlan(Long id, User user) {
-        Optional<TravelPlan> travelPlan = travelPlanRepository.findByIdAndUser(id, user);
-        travelPlan.ifPresent(travelPlanRepository::delete);
+        travelPlanRepository.findByIdAndUser(id, user)
+                .ifPresent(travelPlanRepository::delete);
     }
-    
+
     /**
-     * 从计划数据中提取目的地
+     * 使用 Jackson 安全解析 JSON
      */
-    private String extractDestinationFromPlanData(String planData) {
+    private JsonNode parseJson(String jsonStr) {
         try {
-            // 简单的JSON解析提取目的地
-            if (planData.contains("\"destination\":")) {
-                int start = planData.indexOf("\"destination\":") + 14;
-                int end = planData.indexOf("\",", start);
-                if (end > start) {
-                    return planData.substring(start, end);
-                }
-            }
+            return objectMapper.readTree(jsonStr);
         } catch (Exception e) {
-            // 解析失败，返回默认值
+            return objectMapper.createObjectNode(); // 返回空 JSON 节点
+        }
+    }
+
+    /**
+     * 从 JSON 提取目的地
+     */
+    private String extractDestination(JsonNode jsonNode) {
+        JsonNode destNode = jsonNode.path("destination");
+        if (!destNode.isMissingNode() && !destNode.asText().isEmpty()) {
+            return destNode.asText();
         }
         return "未知目的地";
     }
-    
+
     /**
-     * 从计划数据中提取天数
+     * 从 JSON 提取行程天数
      */
-    private Integer extractDurationFromPlanData(String planData) {
-        try {
-            // 简单的JSON解析提取天数
-            if (planData.contains("\"duration\":")) {
-                int start = planData.indexOf("\"duration\":") + 11;
-                int end = planData.indexOf(",", start);
-                if (end > start) {
-                    String durationStr = planData.substring(start, end).trim();
-                    return Integer.parseInt(durationStr);
-                }
-            }
-        } catch (Exception e) {
-            // 解析失败，返回默认值
+    private Integer extractDuration(JsonNode jsonNode) {
+        JsonNode durationNode = jsonNode.path("duration");
+        if (durationNode.isInt()) {
+            return durationNode.asInt();
         }
         return 3; // 默认3天
     }
-    
+
+    /**
+     * 从 JSON 提取总预算
+     */
+    private BigDecimal extractTotalBudget(JsonNode jsonNode) {
+        // 1. 优先使用显式 totalBudget 字段
+        JsonNode budgetNode = jsonNode.path("totalBudget");
+        if (budgetNode.isNumber()) {
+            BigDecimal value = budgetNode.decimalValue();
+            if (value.compareTo(BigDecimal.ZERO) > 0) {
+                return value;
+            }
+        }
+
+        // 2. 若未提供 totalBudget，则根据 days[].activities[].budget 汇总
+        BigDecimal total = BigDecimal.ZERO;
+        JsonNode days = jsonNode.path("days");
+        if (days.isArray()) {
+            for (JsonNode day : days) {
+                JsonNode activities = day.path("activities");
+                if (activities.isArray()) {
+                    for (JsonNode activity : activities) {
+                        JsonNode budget = activity.path("budget");
+                        if (budget.isNumber()) {
+                            total = total.add(budget.decimalValue());
+                        }
+                    }
+                }
+            }
+        }
+
+        // 如果总和仍为 0，则设定一个合理默认值
+        if (total.compareTo(BigDecimal.ZERO) == 0) {
+            total = BigDecimal.valueOf(3000);
+        }
+
+        return total;
+    }
+
     /**
      * 从旅行需求中提取关键词
      */
     private String[] extractKeywords(String travelRequest) {
-        // 简单的关键词提取逻辑
         return travelRequest.toLowerCase()
                 .replaceAll("[^\\u4e00-\\u9fa5a-zA-Z0-9]", " ")
                 .split("\\s+");
