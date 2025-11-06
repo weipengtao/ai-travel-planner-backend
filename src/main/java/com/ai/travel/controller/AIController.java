@@ -132,6 +132,7 @@ public class AIController {
                         planInfo.put("id", plan.getId());
                         planInfo.put("destination", plan.getDestination());
                         planInfo.put("duration", plan.getDuration());
+                        planInfo.put("travelRequest", plan.getTravelRequest());
                         planInfo.put("createdAt", plan.getCreatedAt());
                         return planInfo;
                     })
@@ -142,6 +143,46 @@ public class AIController {
         } catch (Exception e) {
             return ResponseEntity.internalServerError()
                     .body(createErrorResponse("获取旅行计划列表失败: " + e.getMessage()));
+        }
+    }
+    
+    /**
+     * 根据ID获取特定旅行计划的详细信息
+     * @param planId 旅行计划ID
+     * @param authorization JWT token
+     * @return 旅行计划的详细信息
+     */
+    @GetMapping("/plan/{planId}")
+    public ResponseEntity<?> getTravelPlanById(
+            @PathVariable Long planId,
+            @RequestHeader(value = "Authorization", required = false) String authorization) {
+        try {
+            // 验证用户身份
+            User user = validateUser(authorization);
+            if (user == null) {
+                return ResponseEntity.badRequest().body(createErrorResponse("用户未登录或token无效"));
+            }
+            
+            Optional<TravelPlan> travelPlan = travelPlanService.getTravelPlanById(planId, user);
+            if (travelPlan.isPresent()) {
+                Map<String, Object> planDetails = new HashMap<>();
+                planDetails.put("id", travelPlan.get().getId());
+                planDetails.put("destination", travelPlan.get().getDestination());
+                planDetails.put("duration", travelPlan.get().getDuration());
+                planDetails.put("totalBudget", travelPlan.get().getTotalBudget());
+                planDetails.put("travelRequest", travelPlan.get().getTravelRequest());
+                planDetails.put("planData", travelPlan.get().getPlanData());
+                planDetails.put("createdAt", travelPlan.get().getCreatedAt());
+                planDetails.put("updatedAt", travelPlan.get().getUpdatedAt());
+                
+                return ResponseEntity.ok(createSuccessResponse(planDetails, "获取旅行计划详情成功"));
+            } else {
+                return ResponseEntity.badRequest().body(createErrorResponse("旅行计划不存在或无权访问"));
+            }
+            
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError()
+                    .body(createErrorResponse("获取旅行计划详情失败: " + e.getMessage()));
         }
     }
 
