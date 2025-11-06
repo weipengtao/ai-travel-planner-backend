@@ -78,9 +78,23 @@ public class TravelPlanService {
     }
 
     /**
+     * 检查是否存在完全相同的旅行计划（避免重复生成）
+     */
+    public boolean hasExactSamePlan(User user, String travelRequest) {
+        List<TravelPlan> exactPlans = travelPlanRepository.findByUserAndTravelRequestOrderByCreatedAtDesc(user, travelRequest);
+        return !exactPlans.isEmpty();
+    }
+    
+    /**
      * 检查是否存在相似的旅行计划（避免重复生成）
      */
     public boolean hasSimilarPlan(User user, String travelRequest) {
+        // 首先检查是否有完全相同的计划
+        if (hasExactSamePlan(user, travelRequest)) {
+            return true;
+        }
+        
+        // 如果没有完全相同的，再检查是否有相似的
         String[] keywords = extractKeywords(travelRequest);
         for (String keyword : keywords) {
             List<TravelPlan> similarPlans = travelPlanRepository.findSimilarPlansByUserAndKeyword(user, keyword);

@@ -61,13 +61,13 @@ public class AIController {
                 return ResponseEntity.badRequest().body(createErrorResponse("用户未登录或token无效"));
             }
             
-            // 检查是否存在相似的旅行计划
-            if (travelPlanService.hasSimilarPlan(user, travelRequest)) {
-                // 如果存在相似计划，返回最近的一个
+            // 检查是否存在完全相同的旅行计划
+            if (travelPlanService.hasExactSamePlan(user, travelRequest)) {
+                // 如果存在完全相同的计划，返回最近的一个
                 Optional<TravelPlan> latestPlan = travelPlanService.getLatestTravelPlan(user);
                 if (latestPlan.isPresent()) {
                     String planData = latestPlan.get().getPlanData();
-                    return ResponseEntity.ok(createSuccessResponse(planData, "使用已有的相似旅行计划"));
+                    return ResponseEntity.ok(createSuccessResponse(planData, "使用已有的相同旅行计划"));
                 }
             }
             

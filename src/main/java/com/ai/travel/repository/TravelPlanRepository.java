@@ -29,6 +29,11 @@ public interface TravelPlanRepository extends JpaRepository<TravelPlan, Long> {
     Optional<TravelPlan> findByIdAndUser(Long id, User user);
     
     /**
+     * 根据用户ID和旅行需求查找完全相同的旅行计划
+     */
+    List<TravelPlan> findByUserAndTravelRequestOrderByCreatedAtDesc(User user, String travelRequest);
+    
+    /**
      * 统计用户创建的旅行计划数量
      */
     long countByUser(User user);
