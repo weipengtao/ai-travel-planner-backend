@@ -50,6 +50,8 @@ public class AIController {
             @RequestHeader(value = "Authorization", required = false) String authorization) {
         try {
             String travelRequest = request.get("travelRequest");
+            String forceRegenerate = request.get("forceRegenerate");
+            boolean shouldForceRegenerate = "true".equals(forceRegenerate);
             
             if (travelRequest == null || travelRequest.trim().isEmpty()) {
                 return ResponseEntity.badRequest().body(createErrorResponse("旅行需求不能为空"));
@@ -61,8 +63,8 @@ public class AIController {
                 return ResponseEntity.badRequest().body(createErrorResponse("用户未登录或token无效"));
             }
             
-            // 检查是否存在完全相同的旅行计划
-            if (travelPlanService.hasExactSamePlan(user, travelRequest)) {
+            // 如果不是强制重新生成，检查是否存在完全相同的旅行计划
+            if (!shouldForceRegenerate && travelPlanService.hasExactSamePlan(user, travelRequest)) {
                 // 如果存在完全相同的计划，返回最近的一个
                 Optional<TravelPlan> latestPlan = travelPlanService.getLatestTravelPlan(user);
                 if (latestPlan.isPresent()) {
@@ -99,7 +101,12 @@ public class AIController {
             
             Optional<TravelPlan> latestPlan = travelPlanService.getLatestTravelPlan(user);
             if (latestPlan.isPresent()) {
-                return ResponseEntity.ok(createSuccessResponse(latestPlan.get().getPlanData(), "获取最近旅行计划成功"));
+                // 创建包含计划数据和原始旅行需求的响应
+                Map<String, Object> planInfo = new HashMap<>();
+                planInfo.put("planData", latestPlan.get().getPlanData());
+                planInfo.put("travelRequest", latestPlan.get().getTravelRequest());
+                
+                return ResponseEntity.ok(createSuccessResponse(planInfo, "获取最近旅行计划成功"));
             } else {
                 return ResponseEntity.ok(createSuccessResponse(null, "暂无旅行计划"));
             }

@@ -37,7 +37,7 @@ public class AIService {
         String systemPrompt = "你是一个专业的旅行规划师。请根据用户的旅行需求，生成一个详细、实用的旅行计划。" +
                 "计划应该包括：目的地、旅行天数、每日行程安排（包括时间、景点、活动、预算等）、总预算估算。" +
                 "请以JSON格式返回，包含以下字段：destination, duration, totalBudget, days（数组，包含day, date, title, activities数组）。" +
-                "activities数组包含：name, time, budget, description。" +
+                "activities数组包含：name, time, budget, description，其中name为具体的地名。" +
                 "请确保返回的数据结构清晰，便于前端解析。";
 
         List<ChatMessage> chatMessages = new ArrayList<>();
