@@ -60,17 +60,23 @@ public class AuthController {
     public ResponseEntity<?> registerUser(@Valid @RequestBody RegisterRequest registerRequest) {
         // 检查用户名是否已存在
         if (userRepository.existsByUsername(registerRequest.getUsername())) {
-            return ResponseEntity.badRequest().body("错误：用户名已被使用！");
+            return ResponseEntity.badRequest().body(new java.util.HashMap<String, String>() {{
+                put("error", "用户名已被使用！");
+            }});
         }
 
         // 检查邮箱是否已存在
         if (userRepository.existsByEmail(registerRequest.getEmail())) {
-            return ResponseEntity.badRequest().body("错误：邮箱已被使用！");
+            return ResponseEntity.badRequest().body(new java.util.HashMap<String, String>() {{
+                put("error", "邮箱已被使用！");
+            }});
         }
 
         // 检查密码和确认密码是否匹配
         if (!registerRequest.getPassword().equals(registerRequest.getConfirmPassword())) {
-            return ResponseEntity.badRequest().body("错误：密码和确认密码不匹配！");
+            return ResponseEntity.badRequest().body(new java.util.HashMap<String, String>() {{
+                put("error", "密码和确认密码不匹配！");
+            }});
         }
 
         // 创建新用户
@@ -80,18 +86,26 @@ public class AuthController {
         
         userRepository.save(user);
 
-        return ResponseEntity.ok("用户注册成功！");
+        return ResponseEntity.ok(new java.util.HashMap<String, String>() {{
+            put("message", "用户注册成功！");
+        }});
     }
 
     @GetMapping("/check-username")
     public ResponseEntity<?> checkUsername(@RequestParam String username) {
         boolean exists = userRepository.existsByUsername(username);
-        return ResponseEntity.ok(exists ? "用户名已存在" : "用户名可用");
+        return ResponseEntity.ok(new java.util.HashMap<String, Object>() {{
+            put("exists", exists);
+            put("message", exists ? "用户名已存在" : "用户名可用");
+        }});
     }
 
     @GetMapping("/check-email")
     public ResponseEntity<?> checkEmail(@RequestParam String email) {
         boolean exists = userRepository.existsByEmail(email);
-        return ResponseEntity.ok(exists ? "邮箱已存在" : "邮箱可用");
+        return ResponseEntity.ok(new java.util.HashMap<String, Object>() {{
+            put("exists", exists);
+            put("message", exists ? "邮箱已存在" : "邮箱可用");
+        }});
     }
 }
