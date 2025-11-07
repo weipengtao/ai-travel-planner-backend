@@ -68,15 +68,21 @@ public class AIController {
                 // 如果存在完全相同的计划，返回最近的一个
                 Optional<TravelPlan> latestPlan = travelPlanService.getLatestTravelPlan(user);
                 if (latestPlan.isPresent()) {
-                    String planData = latestPlan.get().getPlanData();
-                    return ResponseEntity.ok(createSuccessResponse(planData, "使用已有的相同旅行计划"));
+                    Map<String, Object> planInfo = new HashMap<>();
+                    planInfo.put("id", latestPlan.get().getId());
+                    planInfo.put("planData", latestPlan.get().getPlanData());
+                    return ResponseEntity.ok(createSuccessResponse(planInfo, "使用已有的相同旅行计划"));
                 }
             }
             
             // 创建新的旅行计划
             TravelPlan travelPlan = travelPlanService.createTravelPlan(user, travelRequest);
             
-            return ResponseEntity.ok(createSuccessResponse(travelPlan.getPlanData(), "旅行计划生成成功"));
+            Map<String, Object> planInfo = new HashMap<>();
+            planInfo.put("id", travelPlan.getId());
+            planInfo.put("planData", travelPlan.getPlanData());
+            
+            return ResponseEntity.ok(createSuccessResponse(planInfo, "旅行计划生成成功"));
             
         } catch (Exception e) {
             return ResponseEntity.internalServerError()
@@ -103,6 +109,7 @@ public class AIController {
             if (latestPlan.isPresent()) {
                 // 创建包含计划数据和原始旅行需求的响应
                 Map<String, Object> planInfo = new HashMap<>();
+                planInfo.put("id", latestPlan.get().getId());
                 planInfo.put("planData", latestPlan.get().getPlanData());
                 planInfo.put("travelRequest", latestPlan.get().getTravelRequest());
                 
