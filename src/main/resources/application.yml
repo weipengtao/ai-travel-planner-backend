@@ -21,7 +21,7 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          secret-key: mySecretKeyForJWTGenerationWhichShouldBeVeryLongAndSecure
+          secret-key: ${JWT_SECRET}
 
 server:
   port: 8080
@@ -29,7 +29,7 @@ server:
     context-path: /api
 
 jwt:
-  secret: mySecretKeyForJWTGenerationWhichShouldBeVeryLongAndSecure
+  secret: ${JWT_SECRET}
   expiration: 86400000 # 24 hours in milliseconds
 
 logging:
@@ -39,6 +39,6 @@ logging:
 
 # 豆包API配置
 doubao:
-  api-key: "83c6548c-59d1-4d33-8943-0fa2f9e012a4"
-  base-url: "https://ark.cn-beijing.volces.com/api/v3"
-  model: "doubao-seed-1-6-251015"
+  api-key: ${DOUBAO_API_KEY}
+  base-url: ${DOUBAO_BASE_URL}
+  model: ${DOUBAO_MODEL}
